@@ -28,6 +28,8 @@ enum Commands {
     /// Fuzzy attach to a repository's tmux session (creating it if necessary)
     #[command(alias("t"))]
     Tmux,
+    /// Checkout
+    Checkout { test: String },
 }
 
 #[derive(Debug, Args)]
@@ -57,6 +59,7 @@ fn main() -> anyhow::Result<()> {
             OpenCommands::Pr { target } => cmd::open::pr::run(target),
         },
         Commands::Tmux => cmd::tmux::run(config),
+        Commands::Checkout {test} => cmd::checkout::run(&test),
     }
 }
 
