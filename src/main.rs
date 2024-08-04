@@ -1,4 +1,5 @@
 use clap::{Args, Parser, Subcommand};
+use git2::{ BranchType };
 use home::home_dir;
 
 mod cmd;
@@ -29,7 +30,12 @@ enum Commands {
     #[command(alias("t"))]
     Tmux,
     /// Checkout
-    Checkout { test: String },
+    Checkout {
+        /// Branch name
+        branch_name: String,
+        /// Branch type (remote, local)
+        branch_type: Option<String>,
+    },
 }
 
 #[derive(Debug, Args)]
@@ -59,8 +65,23 @@ fn main() -> anyhow::Result<()> {
             OpenCommands::Pr { target } => cmd::open::pr::run(target),
         },
         Commands::Tmux => cmd::tmux::run(config),
-        Commands::Checkout {test} => cmd::checkout::run(&test),
+        Commands::Checkout {
+            branch_name,
+            branch_type,
+        } => {
+            if branch_type.is_none() {
+                cmd::checkout::run(git2::BranchType::Local, &branch_name);
+            } else if (*branch_type == Some("local".to_string())) {
+                cmd::checkout::run(git2::BranchType::Local, &branch_name);
+            } else if (*branch_type == Some("remote".to_string())) {
+                cmd::checkout::run(git2::BranchType::Remote, &branch_name);
+            }
+
+            Ok(())
+        }
+
     }
+
 }
 
 #[test]
