@@ -70,11 +70,13 @@ fn main() -> anyhow::Result<()> {
             branch_type,
         } => {
             if branch_type.is_none() {
-                cmd::checkout::run(git2::BranchType::Local, &branch_name);
-            } else if (*branch_type == Some("local".to_string())) {
-                cmd::checkout::run(git2::BranchType::Local, &branch_name);
-            } else if (*branch_type == Some("remote".to_string())) {
-                cmd::checkout::run(git2::BranchType::Remote, &branch_name);
+                cmd::checkout::run(BranchType::Local, &branch_name)?;
+            } else if *branch_type == Some("local".to_string()) {
+                cmd::checkout::run(BranchType::Local, &branch_name)?;
+            } else if *branch_type == Some("remote".to_string()) {
+                cmd::checkout::run(BranchType::Remote, &branch_name)?;
+            } else {
+
             }
 
             Ok(())
