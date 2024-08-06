@@ -1,4 +1,4 @@
-// use crate::shell;
+use crate::shell;
 // use std::process::Command;
 use git2::{ Repository, BranchType, Error };
 use std::io::{stdin,stdout,Write};
@@ -17,7 +17,7 @@ fn show_branch(repo: &Repository, branch_type: &BranchType, branch_name: &String
     let local_branch_names: Vec<String> = local_branches
         .flatten()
         .map(|x| x.0.name().unwrap().unwrap().to_string())
-        .filter(|name| name.contains(branch_name))
+        .filter(|name| name.to_lowercase().contains(branch_name))
         .collect();
     // println!("{:?}", local_branch_names);
     // local_branch_names.into_iter().for_each(|(i, x)| println!("[{:?}] {:?}", i, x));
@@ -53,7 +53,25 @@ pub fn run(branch_type: BranchType, branch_name: &String) -> anyhow::Result<()> 
     let target_branch = local_branch_names.get(branch_index as usize);
     println!("{:?}", target_branch);
 
-    // shell::new!("git", "branch", "-a").run(true)?;
+    match target_branch {
+        Some(branch) => {
+            match branch_type {
+                BranchType::Local => {
+                    println!("{}", "checking out local branch");
+                    shell::new!("git", "checkout", &branch).run(true)?;
+                },
+                BranchType::Remote => {
+                    println!("{}", "checking out remote branch");
+                    shell::new!("git", "checkout", &branch).run(true)?;
+
+        },
+    };
+
+        },
+        None => {
+
+        }
+    }
     //
     // let output = Command::new("git").arg("branch").arg("-a").output()?;
     // String::from_utf8(output.stdout)?
