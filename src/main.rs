@@ -8,8 +8,10 @@ mod dep;
 mod repo;
 mod shell;
 mod tui;
+mod branch;
 
 use crate::config::Config;
+use crate::branch::BranchKind;
 use crate::repo::GitRepoSource;
 
 #[derive(Parser)]
@@ -31,11 +33,26 @@ enum Commands {
     Tmux,
     /// Checkout
     Checkout {
+        #[command(flatten)]
+        branch_type: BranchKinds,
+        /// Devops ticket number
+        ticket_number: String,
         /// Branch name
         branch_name: String,
         /// Branch type (remote, local)
-        branch_type: Option<String>,
+        origin_type: Option<String>,
     },
+}
+
+#[derive(Args)]
+#[group(required = true, multiple = false)]
+struct BranchKinds {
+    /// auto inc major
+    #[arg(short, long)]
+    develop: bool,
+    /// auto inc minor
+    #[arg(short, long)]
+    releases: bool,
 }
 
 #[derive(Debug, Args)]
@@ -52,7 +69,6 @@ enum OpenCommands {
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-
     let config = Config {
         host: "github.com".to_string(),
         root: home_dir().expect("unknown HOME directory").join("src"),
@@ -66,15 +82,24 @@ fn main() -> anyhow::Result<()> {
         },
         Commands::Tmux => cmd::tmux::run(config),
         Commands::Checkout {
-            branch_name,
             branch_type,
+            ticket_number,
+            branch_name,
+            origin_type,
         } => {
-            if branch_type.is_none() {
-                cmd::checkout::run(BranchType::Local, &branch_name)?;
-            } else if *branch_type == Some("local".to_string()) {
-                cmd::checkout::run(BranchType::Local, &branch_name)?;
-            } else if *branch_type == Some("remote".to_string()) {
-                cmd::checkout::run(BranchType::Remote, &branch_name)?;
+            let (d, r) = (branch_type.develop, branch_type.releases);
+            let branch_kind = match (d, r) {
+                (true, _) => BranchKind::Develop,
+                (_, true) => BranchKind::Releases,
+                _ => unreachable!(),
+            };
+
+            if origin_type.is_none() {
+                cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, None)?;
+            } else if *origin_type == Some("local".to_string()) {
+                cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, Some(BranchType::Local))?;
+            } else if *origin_type == Some("remote".to_string()) {
+                cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, Some(BranchType::Remote))?;
             } else {
 
             }

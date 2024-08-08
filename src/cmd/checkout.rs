@@ -2,43 +2,92 @@ use crate::shell;
 // use std::process::Command;
 use git2::{ Repository, BranchType, Error };
 use std::io::{stdin,stdout,Write};
+use crate::branch::BranchKind;
 
-fn show_branch(repo: &Repository, branch_type: &BranchType, branch_name: &String) -> Result<Vec<String>, Error> {
-    // let head = match repo.head() {
-    //     Ok(head) => Some(head),
-    //     Err(ref e) if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound => {
-    //         None
-    //     }
-    //     Err(e) => return Err(e),
-    // };
+fn get_branches(repo: &Repository, branch_type: &Option<BranchType>, branch_name: &String) -> Result<Vec<String>, Error> {
 
+    let mut branch_names: Vec<String> = vec![];
+    let lower_branch_name = branch_name.to_lowercase();
 
-    let local_branches = repo.branches(Some(*branch_type)).unwrap();
-    let local_branch_names: Vec<String> = local_branches
-        .flatten()
-        .map(|x| x.0.name().unwrap().unwrap().to_string())
-        .filter(|name| name.to_lowercase().contains(branch_name))
-        .collect();
-    // println!("{:?}", local_branch_names);
-    // local_branch_names.into_iter().for_each(|(i, x)| println!("[{:?}] {:?}", i, x));
+    if *branch_type == None || *branch_type == Some(BranchType::Local) {
+        let local_branches = repo.branches(Some(BranchType::Local)).unwrap();
+        let mut local_branch_names: Vec<String> = local_branches
+            .flatten()
+            .map(|x| x.0.name().unwrap().unwrap().to_string())
+            .filter(|name| name.to_lowercase().contains(&lower_branch_name))
+            .collect();
+        branch_names.append(&mut local_branch_names);
+    }
+    if *branch_type == None || *branch_type == Some(BranchType::Remote) {
+        let remote_branches = repo.branches(Some(BranchType::Remote)).unwrap();
+        let mut remote_branch_names: Vec<String> = remote_branches
+            .flatten()
+            .map(|x| x.0.name().unwrap().unwrap().to_string())
+            .filter(|name| name.to_lowercase().contains(&lower_branch_name))
+            .collect();
+        branch_names.append(&mut remote_branch_names);
+    }
 
-    // println!(
-    //     "# On branch {}",
-    //     head.unwrap_or("Not currently on any branch")
-    // );
-    Ok(local_branch_names)
+    Ok(branch_names)
 }
 
-// fn call_command_with_verify(branch_type: BranchType, args)
-
-pub fn run(branch_type: BranchType, branch_name: &String) -> anyhow::Result<()> {
-    let branch_type_str = match branch_type {
-        BranchType::Local => "local",
-        BranchType::Remote => "remote",
+pub fn run_with_ticket(branch_kind: &BranchKind, ticket_number: &String, branch_name: &String, origin_type: Option<BranchType>) -> anyhow::Result<()> {
+    let branch_type_str = match origin_type {
+        Some(BranchType::Local) => "local",
+        Some(BranchType::Remote) => "remote",
+        None => "all",
     };
-    println!("Looking for branch with string \"{}\", in {} branches", branch_name, branch_type_str);
+    let branch_full_name = branch_kind.to_full_string_with_ticket(ticket_number, branch_name);
+    println!("Looking for a {} branch for ticket {} with string \"{}\", in {} branches", branch_kind.to_string(), ticket_number, branch_full_name, branch_type_str);
+
+    // dbg!(&branch_kind);
     let repo = Repository::open(".")?;
-    let local_branch_names = show_branch(&repo, &branch_type, branch_name)?;
+    let local_branch_names = get_branches(&repo, &origin_type, &branch_full_name)?;
+
+    let num_of_branches_found = local_branch_names.len();
+    if num_of_branches_found > 0 {
+        for (i, x) in local_branch_names.iter().enumerate() {
+            println!("[{:?}] {:?}", i, x)
+        }
+        let mut s=String::new();
+        print!("Which branch to checkout: ");
+        let _= stdout().flush();
+        stdin().read_line(&mut s).expect("Did not enter a correct string");
+        let branch_index: i32 = s.trim_end()
+            .parse::<i32>()
+            .expect("Not a valid integer");
+        let target_branch = local_branch_names.get(branch_index as usize);
+        // println!("{:?}", target_branch);
+
+        match target_branch {
+            Some(branch) => {
+                shell::new!("git", "checkout", &branch).run_yorn()?;
+            },
+            None => {
+            }
+        }
+    } else {
+        println!("{}", String::from("Existing branches not found. Create new one?"));
+        shell::new!("git", "checkout", "-b", &branch_full_name, "--no-track", branch_kind.to_full_string_origin(branch_name)).run_yorn()?;
+    }
+
+
+    Ok(())
+}
+
+#[allow(dead_code)]
+pub fn run(branch_kind: &BranchKind, branch_name: &String, origin_type: Option<BranchType>) -> anyhow::Result<()> {
+    let branch_type_str = match origin_type {
+        Some(BranchType::Local) => "local",
+        Some(BranchType::Remote) => "remote",
+        None => "all",
+    };
+    let branch_full_name = branch_kind.to_full_string(branch_name);
+    println!("Looking for a {} branch with string \"{}\", in {} branches", branch_kind.to_string(), branch_full_name, branch_type_str);
+
+    // dbg!(&branch_kind);
+    let repo = Repository::open(".")?;
+    let local_branch_names = get_branches(&repo, &origin_type, &branch_full_name)?;
 
     for (i, x) in local_branch_names.iter().enumerate() {
         println!("[{:?}] {:?}", i, x)
@@ -51,34 +100,16 @@ pub fn run(branch_type: BranchType, branch_name: &String) -> anyhow::Result<()> 
         .parse::<i32>()
         .expect("Not a valid integer");
     let target_branch = local_branch_names.get(branch_index as usize);
-    println!("{:?}", target_branch);
+    // println!("{:?}", target_branch);
 
     match target_branch {
         Some(branch) => {
-            match branch_type {
-                BranchType::Local => {
-                    println!("{}", "checking out local branch");
-                    shell::new!("git", "checkout", &branch).run(true)?;
-                },
-                BranchType::Remote => {
-                    println!("{}", "checking out remote branch");
-                    shell::new!("git", "checkout", &branch).run(true)?;
-
-        },
-    };
-
+            shell::new!("git", "checkout", &branch).run_yorn()?;
         },
         None => {
 
         }
     }
-    //
-    // let output = Command::new("git").arg("branch").arg("-a").output()?;
-    // String::from_utf8(output.stdout)?
-    //     .lines()
-    //     .for_each(|x| println!("{:?}", x));
-    //
-
 
     Ok(())
 }
