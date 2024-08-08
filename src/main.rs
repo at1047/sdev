@@ -35,9 +35,9 @@ enum Commands {
     Checkout {
         #[command(flatten)]
         branch_type: BranchKinds,
-        /// Devops ticket number
+        /// Devops ticket number (i.e. BUG-123456)
         ticket_number: String,
-        /// Branch name
+        /// Branch name (i.e. develop, JuneMSP_2024)
         branch_name: String,
         /// Branch type (remote, local)
         origin_type: Option<String>,
@@ -47,10 +47,10 @@ enum Commands {
 #[derive(Args)]
 #[group(required = true, multiple = false)]
 struct BranchKinds {
-    /// auto inc major
+    /// use develop branch logic
     #[arg(short, long)]
     develop: bool,
-    /// auto inc minor
+    /// use releases branch logic
     #[arg(short, long)]
     releases: bool,
 }
