@@ -39,11 +39,11 @@ pub fn run_with_ticket(branch_kind: &BranchKind, ticket_number: &String, branch_
         None => "all",
     };
 
-    let input_ticket = parse_ticket(&ticket_number);
-    println!("{}", input_ticket.expect("Can't parse full ticket").to_string());
+    // let input_ticket = parse_ticket(&ticket_number);
+    // println!("{}", input_ticket.expect("Can't parse full ticket").to_string());
 
-    let ticket = search_storage(&String::from("100000"));
-    println!("{}", ticket.expect("No ticket found").to_string());
+    // let ticket = search_storage(&String::from("100000"));
+    // println!("{}", ticket.expect("No ticket found").to_string());
 
     let branch_full_name = branch_kind.to_full_string_with_ticket(ticket_number, branch_name);
     println!("Looking for a {} branch for ticket {} with string \"{}\", in {} branches", branch_kind.to_string(), ticket_number, branch_full_name, branch_type_str);
