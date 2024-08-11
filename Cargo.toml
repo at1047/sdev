@@ -8,12 +8,11 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.72"
 bstr = "1"
-crossterm = "0.27.0"
 home = "0.5.9"
 jwalk = "0.8.1"
 opener = "0.7.1"
 nucleo = "0.5"
-ratatui = "0.27.0"
+ratatui = "0.28.0"
 thiserror = "1"
 git2 = "0.19.0"
 
@@ -25,6 +24,7 @@ features = ["std", "derive", "error-context", "help", "usage"]
 [dependencies.gix]
 version = "0"
 default-features = false
+features = ["blocking-network-client", "max-performance-safe", "worktree-mutation"]
 
 [dependencies.gix-features]
 version = "0"
