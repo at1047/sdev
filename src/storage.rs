@@ -3,11 +3,21 @@ use std::io::BufReader;
 use std::fs::File;
 use std::path::Path;
 use std::fs;
+use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub struct Ticket {
     prefix: Prefix,
     number: i32,
+}
+
+#[derive(Debug, Clone)]
+pub struct TicketError;
+
+impl fmt::Display for TicketError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "invalid first item to double")
+    }
 }
 
 impl Ticket {
@@ -28,7 +38,7 @@ enum Prefix {
     BUG,
 }
 
-pub fn parse_ticket(input_string: &String) -> Option<Ticket> {
+pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError> {
     let input_string_no_spaces = input_string.replace(" ", "-");
     let parts = input_string_no_spaces.split("-");
     let parts_vec: Vec<&str> = parts.collect();
@@ -38,7 +48,7 @@ pub fn parse_ticket(input_string: &String) -> Option<Ticket> {
         let prefix = match parts_vec[0].to_uppercase().as_ref() {
             "BUG" => Some(Prefix::BUG),
             "FEATURE" => Some(Prefix::FEATURE),
-            _ => None,
+            _ => panic!("Prefix invalid"),
         };
 
         let value = match parts_vec[1].parse::<i32>() {
@@ -46,10 +56,10 @@ pub fn parse_ticket(input_string: &String) -> Option<Ticket> {
                 if i > 99999 && i < 1000000 {
                     Some(i)
                 } else {
-                    None
+                    panic!("Ticket is not a valid 6 digit number");
                 }
             },
-            Err(_error) => None,
+            Err(_error) => panic!("Unable to process ticket number"),
         };
 
         match (prefix, value) {
@@ -63,7 +73,7 @@ pub fn parse_ticket(input_string: &String) -> Option<Ticket> {
         };
 
     }
-    ticket
+    Ok(ticket)
 }
 
 fn lines_from_file(filename: impl AsRef<Path>) -> Option<Vec<String>> {

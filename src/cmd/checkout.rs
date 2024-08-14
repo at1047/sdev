@@ -39,7 +39,12 @@ pub fn run_with_ticket(branch_kind: &BranchKind, ticket_number: &String, branch_
         None => "all",
     };
 
-    let input_ticket = parse_ticket(&ticket_number);
+    // let input_ticket = parse_ticket(&ticket_number).unwrap();
+    let input_ticket = match parse_ticket(&ticket_number) {
+        Ok(ticket) => ticket,
+        Err(error) => panic!("Problem opening the file: {error:?}"),
+    };
+
     let input_ticket_full_name = &input_ticket.unwrap().to_string();
     // println!("{}", input_ticket.expect("Can't parse full ticket").to_string());
 
