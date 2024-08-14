@@ -2,8 +2,9 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::fs::File;
 use std::path::Path;
+use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Ticket {
     prefix: Prefix,
     number: i32,
@@ -21,7 +22,7 @@ impl Ticket {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Prefix {
     FEATURE,
     BUG,
@@ -65,13 +66,28 @@ pub fn parse_ticket(input_string: &String) -> Option<Ticket> {
     ticket
 }
 
-fn lines_from_file(filename: impl AsRef<Path>) -> Vec<String> {
-    let file = File::open(filename).expect("no such file");
-    let buf = BufReader::new(file);
-    buf.lines()
-        .map(|l| l.expect("Could not parse line"))
-        .collect()
+fn lines_from_file(filename: impl AsRef<Path>) -> Option<Vec<String>> {
+    let data = fs::read_to_string(filename).expect("Unable to read file");
+    println!("{}", data);
+    None
+    // match File::open(filename) {
+    //     Ok(file) => {
+    //         let buf = BufReader::new(file);
+    //         let vec = buf.lines()
+    //             .map(|l| l.expect("Could not parse line"))
+    //             .collect();
+    //         Some(vec)
+    //     },
+    //     Err(e) => None,
+    // }
 }
+
+pub fn lines_to_file() {
+    let data = "Some data!";
+    let mut f = File::create("/test.txt").expect("Unable to create file");
+    f.write_all(data.as_bytes()).expect("Unable to write data");
+}
+
 
 fn search_vec(file_vec: &Vec<String>, search_string: &String) -> Option<Ticket> {
     let mut ticket: Option<Ticket> = None;
@@ -99,7 +115,10 @@ fn search_vec(file_vec: &Vec<String>, search_string: &String) -> Option<Ticket> 
 
 pub fn search_storage(search_string: &String) -> Option<Ticket> {
     let lines = lines_from_file("ticket_names.txt");
-    search_vec(&lines, &search_string)
+    match lines {
+        Some(i) => search_vec(&i, &search_string),
+        None => None,
+    }
 }
 
 
@@ -144,4 +163,38 @@ pub fn search_storage_from_file(search_string: &String) -> Option<Ticket> {
         Err(_error) => None,
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    // use crate::storage::*;
+
+    #[test]
+    fn test_parse_ticket() {
+        assert_eq!(parse_ticket(&String::from("BUG-123456")), Some(Ticket {
+            prefix: Prefix::BUG,
+            number: 123456,
+        }));
+        assert_eq!(parse_ticket(&String::from("bug-123456")), Some(Ticket {
+            prefix: Prefix::BUG,
+            number: 123456,
+        }));
+        assert_eq!(parse_ticket(&String::from("BUG 123456")), Some(Ticket {
+            prefix: Prefix::BUG,
+            number: 123456,
+        }));
+        assert_eq!(parse_ticket(&String::from("123456")), None);
+        assert_eq!(parse_ticket(&String::from("BUG")), None);
+        assert_eq!(parse_ticket(&String::from("BUG-1234561")), None);
+        assert_eq!(parse_ticket(&String::from("BUG-12345")), None);
+    }
+
+    // #[test]
+    // fn test_bad_add() {
+    //     // This assert would fire and test will fail.
+    //     // Please note, that private functions can be tested too!
+    //     assert_eq!(bad_add(1, 2), 3);
+    // }
 }

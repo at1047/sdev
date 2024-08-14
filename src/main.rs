@@ -88,8 +88,6 @@ fn main() -> anyhow::Result<()> {
             branch_name,
             origin_type,
         } => {
-            let (d, r) = (branch_type.develop, branch_type.releases);
-            let branch_kind = match (d, r) {
                 (true, _) => BranchKind::Develop,
                 (_, true) => BranchKind::Releases,
                 _ => unreachable!(),
