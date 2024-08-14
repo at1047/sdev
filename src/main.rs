@@ -9,7 +9,7 @@ mod repo;
 mod shell;
 mod tui;
 mod branch;
-mod storage;
+mod ticket;
 
 use crate::config::Config;
 use crate::branch::BranchKind;

@@ -6,11 +6,12 @@ pub struct Ticket {
     number: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TicketError {
     NumberNotAnInteger,
     NumberNotSixDigits,
     PrefixInvalid,
+    MissingPart,
 }
 
 impl fmt::Display for TicketError {
@@ -22,6 +23,8 @@ impl fmt::Display for TicketError {
                 write!(f, "Ticket number isn't six digits"),
             TicketError::PrefixInvalid =>
                 write!(f, "Invalid Prefix, must be BUG/FEATURE"),
+            TicketError::MissingPart =>
+                write!(f, "Missing part of ticket name"),
         }
     }
 }
@@ -49,7 +52,7 @@ pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError
     let parts = input_string_no_spaces.split("-");
     let parts_vec: Vec<&str> = parts.collect();
     // optionally check whether
-    let mut ticket: Option<Ticket> = None;
+    // let mut ticket: Option<Ticket> = None;
     if parts_vec.len() == 2 {
         let prefix = match parts_vec[0].to_uppercase().as_ref() {
             "BUG" => Some(Prefix::BUG),
@@ -70,16 +73,17 @@ pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError
 
         match (prefix, value) {
             (Some(a), Some(b)) => {
-                ticket = Some(Ticket {
+                return Ok(Some(Ticket {
                     prefix: a,
                     number: b,
-                })
+                }))
             },
             _ => unreachable!(),
         };
 
+    } else {
+        return Err(TicketError::MissingPart);
     }
-    Ok(ticket)
 }
 
 #[cfg(test)]
@@ -90,22 +94,24 @@ mod tests {
 
     #[test]
     fn test_parse_ticket() {
-        assert_eq!(parse_ticket(&String::from("BUG-123456")), Some(Ticket {
+        assert_eq!(parse_ticket(&String::from("BUG-123456")), Ok(Some(Ticket {
             prefix: Prefix::BUG,
             number: 123456,
-        }));
-        assert_eq!(parse_ticket(&String::from("bug-123456")), Some(Ticket {
+        })));
+        assert_eq!(parse_ticket(&String::from("bug-123456")), Ok(Some(Ticket {
             prefix: Prefix::BUG,
             number: 123456,
-        }));
-        assert_eq!(parse_ticket(&String::from("BUG 123456")), Some(Ticket {
+        })));
+        assert_eq!(parse_ticket(&String::from("BUG 123456")), Ok(Some(Ticket {
             prefix: Prefix::BUG,
             number: 123456,
-        }));
-        assert_eq!(parse_ticket(&String::from("123456")), None);
-        assert_eq!(parse_ticket(&String::from("BUG")), None);
-        assert_eq!(parse_ticket(&String::from("BUG-1234561")), None);
-        assert_eq!(parse_ticket(&String::from("BUG-12345")), None);
+        })));
+        assert_eq!(parse_ticket(&String::from("123456")), Err(TicketError::MissingPart));
+        assert_eq!(parse_ticket(&String::from("BUG")), Err(TicketError::MissingPart));
+        assert_eq!(parse_ticket(&String::from("BUG-1234561")), Err(TicketError::NumberNotSixDigits));
+        assert_eq!(parse_ticket(&String::from("BUG-12345")), Err(TicketError::NumberNotSixDigits));
+        assert_eq!(parse_ticket(&String::from("BUG-12345a")), Err(TicketError::NumberNotAnInteger));
+        assert_eq!(parse_ticket(&String::from("BUD-123456")), Err(TicketError::PrefixInvalid));
     }
 
     // #[test]

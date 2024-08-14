@@ -1,8 +1,9 @@
 use crate::shell;
+use crate::shell::Colors;
 use git2::{ Repository, BranchType, Error };
 use std::io::{stdin,stdout,Write};
 use crate::branch::BranchKind;
-use crate::storage::*;
+use crate::ticket::*;
 use std::process::exit;
 
 fn get_branches(repo: &Repository, branch_type: &Option<BranchType>, branch_name: &String) -> Result<Vec<String>, Error> {
@@ -33,6 +34,10 @@ fn get_branches(repo: &Repository, branch_type: &Option<BranchType>, branch_name
 }
 
 pub fn run_with_ticket(branch_kind: &BranchKind, ticket_number: &String, branch_name: &String, origin_type: Option<BranchType>) -> anyhow::Result<()> {
+
+
+    shell::new_colorful!("git", ("branch", Colors::FG_RED), ("-a", Colors::FG_BLUE)).run_yorn_colorful();
+
     let branch_type_str = match origin_type {
         Some(BranchType::Local) => "local",
         Some(BranchType::Remote) => "remote",
