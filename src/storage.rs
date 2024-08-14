@@ -1,8 +1,3 @@
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::fs::File;
-use std::path::Path;
-use std::fs;
 use std::fmt;
 
 #[derive(Debug, PartialEq)]
@@ -11,12 +6,23 @@ pub struct Ticket {
     number: i32,
 }
 
-#[derive(Debug, Clone)]
-pub struct TicketError;
+#[derive(Debug)]
+pub enum TicketError {
+    NumberNotAnInteger,
+    NumberNotSixDigits,
+    PrefixInvalid,
+}
 
 impl fmt::Display for TicketError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid first item to double")
+        match *self {
+            TicketError::NumberNotAnInteger =>
+                write!(f, "Ticket number isn't an integer"),
+            TicketError::NumberNotSixDigits =>
+                write!(f, "Ticket number isn't six digits"),
+            TicketError::PrefixInvalid =>
+                write!(f, "Invalid Prefix, must be BUG/FEATURE"),
+        }
     }
 }
 
@@ -48,7 +54,7 @@ pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError
         let prefix = match parts_vec[0].to_uppercase().as_ref() {
             "BUG" => Some(Prefix::BUG),
             "FEATURE" => Some(Prefix::FEATURE),
-            _ => panic!("Prefix invalid"),
+            _ => return Err(TicketError::PrefixInvalid),
         };
 
         let value = match parts_vec[1].parse::<i32>() {
@@ -56,10 +62,10 @@ pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError
                 if i > 99999 && i < 1000000 {
                     Some(i)
                 } else {
-                    panic!("Ticket is not a valid 6 digit number");
+                    return Err(TicketError::NumberNotSixDigits);
                 }
             },
-            Err(_error) => panic!("Unable to process ticket number"),
+            Err(_error) => return Err(TicketError::NumberNotAnInteger),
         };
 
         match (prefix, value) {
@@ -69,110 +75,11 @@ pub fn parse_ticket(input_string: &String) -> Result<Option<Ticket>, TicketError
                     number: b,
                 })
             },
-            _ => {},
+            _ => unreachable!(),
         };
 
     }
     Ok(ticket)
-}
-
-fn lines_from_file(filename: impl AsRef<Path>) -> Option<Vec<String>> {
-    let data = fs::read_to_string(filename).expect("Unable to read file");
-    println!("{}", data);
-    None
-    // match File::open(filename) {
-    //     Ok(file) => {
-    //         let buf = BufReader::new(file);
-    //         let vec = buf.lines()
-    //             .map(|l| l.expect("Could not parse line"))
-    //             .collect();
-    //         Some(vec)
-    //     },
-    //     Err(e) => None,
-    // }
-}
-
-pub fn lines_to_file() {
-    let data = "Some data!";
-    let mut f = File::create("/test.txt").expect("Unable to create file");
-    f.write_all(data.as_bytes()).expect("Unable to write data");
-}
-
-
-fn search_vec(file_vec: &Vec<String>, search_string: &String) -> Option<Ticket> {
-    let mut ticket: Option<Ticket> = None;
-    for line in file_vec {
-        if line.contains(search_string) {
-            let parts = line.split("-");
-            let parts_vec: Vec<&str> = parts.collect();
-            if parts_vec.len() == 2 {
-                let prefix = match parts_vec[0] {
-                    "BUG" => Prefix::BUG,
-                    "FEATURE" => Prefix::FEATURE,
-                    _ => unreachable!(),
-                };
-                let value = parts_vec[1].parse::<i32>().unwrap();
-                ticket = Some(Ticket {
-                    prefix: prefix,
-                    number: value,
-                });
-                // dbg!(ticket);
-            }
-        }
-    }
-    ticket
-}
-
-pub fn search_storage(search_string: &String) -> Option<Ticket> {
-    let lines = lines_from_file("ticket_names.txt");
-    match lines {
-        Some(i) => search_vec(&i, &search_string),
-        None => None,
-    }
-}
-
-
-#[allow(dead_code)]
-pub fn search_storage_from_file(search_string: &String) -> Option<Ticket> {
-    let file = File::open("ticket_names.txt");
-
-    match file {
-        Ok(file) => {
-            let reader = BufReader::new(file);
-            let mut ticket: Option<Ticket> = None;
-
-            for line in reader.lines() {
-                match line {
-                    Ok(unwrapped_line) => {
-                        if unwrapped_line.contains(search_string) {
-                            let parts = unwrapped_line.split("-");
-                            let parts_vec: Vec<&str> = parts.collect();
-                            // optionally check whether
-                            if parts_vec.len() == 2 {
-                                let prefix = match parts_vec[0] {
-                                    "BUG" => Prefix::BUG,
-                                    "FEATURE" => Prefix::FEATURE,
-                                    _ => unreachable!(),
-                                };
-                                let value = parts_vec[1].parse::<i32>().unwrap();
-                                ticket = Some(Ticket {
-                                    prefix: prefix,
-                                    number: value,
-                                });
-                                // dbg!(ticket);
-                            }
-                        }
-                    },
-                    Err(_error) => {},
-                }
-
-            }
-            ticket
-
-        },
-        Err(_error) => None,
-    }
-
 }
 
 #[cfg(test)]

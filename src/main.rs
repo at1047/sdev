@@ -35,12 +35,13 @@ enum Commands {
     /// Checkout
     Checkout {
         #[command(flatten)]
+        /// Branch Kind (develop "-d" or releases "-r")
         branch_type: BranchKinds,
-        /// Devops ticket number (i.e. BUG-123456)
+        /// DevOps ticket number (i.e. BUG-123456, "BUG 123456")
         ticket_number: String,
         /// Branch name (i.e. develop, JuneMSP_2024)
         branch_name: String,
-        /// Branch type (remote, local)
+        /// Optional: Branch type (remote, local)
         origin_type: Option<String>,
     },
 }
