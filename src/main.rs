@@ -97,7 +97,7 @@ fn main() -> anyhow::Result<()> {
             };
 
             if origin_type.is_none() {
-                cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, None)?;
+                cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, Some(BranchType::Local))?;
             } else if *origin_type == Some("local".to_string()) {
                 cmd::checkout::run_with_ticket(&branch_kind, &ticket_number, &branch_name, Some(BranchType::Local))?;
             } else if *origin_type == Some("remote".to_string()) {

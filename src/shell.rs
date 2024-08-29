@@ -13,6 +13,7 @@ pub enum Colors {
     FG_MAGENTA,
     FG_CYAN,
     FG_WHITE,
+    RESET,
 }
 
 impl fmt::Display for Colors {
@@ -27,37 +28,32 @@ impl fmt::Display for Colors {
             Colors::FG_MAGENTA => "\x1b[35m",
             Colors::FG_CYAN => "\x1b[36m",
             Colors::FG_WHITE => "\x1b[37m",
+            Colors::RESET => "\x1b[0m",
         };
         write!(f, "{}", color_str)
     }
 }
 
-pub const RESET: &str = "\x1b[0m";
 
 macro_rules! println_shell {
     ($($arg:tt)*) => ({
-        println!("{}$ {}{}", Colors::FG_GRAY, format_args!($($arg)*), RESET);
+        println!("{}$ {}{}", Colors::FG_GRAY, format_args!($($arg)*), Colors::RESET);
     })
 }
 
+#[allow(unused_macros)]
 macro_rules! println_shell_colorful {
     ($arg:expr, $color:expr) => ({
-    let arg_start = $arg.get_program().to_str().unwrap();
-    let arg_vec = $arg.get_args();
+        let arg_start = $arg.get_program().to_str().unwrap();
+        let arg_vec = $arg.get_args();
 
-    print!("{}$ {}", Colors::FG_GRAY, arg_start);
-    // print!("{:?}", $color);
-    for (i, item) in arg_vec.enumerate() {
-        print!("{}", $color[i]);
-        print!(" {}", item.to_str().unwrap());
-        // print!("{:?} end", $color.(i-1));
-    }
-        // for (i, arg) in arg_vec.enumerate() {
-        //     println!("{i} {}", arg.to_str().unwrap());
-        // }
-        print!("{}\n", RESET);
+        print!("{}$ {}", Colors::FG_GRAY, arg_start);
+        for (i, item) in arg_vec.enumerate() {
+            print!("{}", $color[i]);
+            print!(" {}", item.to_str().unwrap());
+        }
+        print!("{}\n", Colors::RESET);
         let _= std::io::stdout().flush();
-        // println!("{}$ {}{}", FG_GRAY, format_args!($($arg)*), RESET);
     })
 }
 
@@ -71,6 +67,7 @@ macro_rules! new {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! new_colorful {
     ($bin:expr, $($x:expr),* $(,)?) => {
         {
@@ -84,6 +81,9 @@ macro_rules! new_colorful {
 }
 
 pub(crate) use new;
+
+// Turn off color imports for now, can't find a pretty way to use
+#[allow(unused_imports)]
 pub(crate) use new_colorful;
 
 #[derive(Debug)]
